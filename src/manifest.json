@@ -4,13 +4,13 @@
   "icon": "icon.png",
   "commands": [
     {
-      "name": "my-command",
+      "name": "Export Prototype to HTML",
       "identifier": "my-command-identifier",
       "script": "./my-command.js"
     }
   ],
   "menu": {
-    "title": "FlowExporter",
+    "title": "🗳 Flow Exporter",
     "items": [
       "my-command-identifier"
     ]
