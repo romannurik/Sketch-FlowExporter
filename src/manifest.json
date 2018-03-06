@@ -5,14 +5,14 @@
   "commands": [
     {
       "name": "Export Prototype to HTML",
-      "identifier": "my-command-identifier",
-      "script": "./my-command.js"
+      "identifier": "export-html",
+      "script": "./export-html.js"
     }
   ],
   "menu": {
     "title": "🗳 Flow Exporter",
     "items": [
-      "my-command-identifier"
+      "export-html"
     ]
   }
 }
