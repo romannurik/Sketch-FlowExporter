@@ -1,11 +1,16 @@
 <!doctype html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <style>
     html, body {
       margin: 0;
       height: 100%;
+      overflow-x: hidden;
     }
 
     .prototype-container {
@@ -15,11 +20,10 @@
 
     .artboard {
       position: absolute;
-      left: 50%;
-      top: 50%;
+      left: 0;
+      top: 0;
       opacity: 0;
       visibility: hidden;
-      transform: translate(-50%, -50%);
       box-shadow: 0 0 0 1px rgba(0, 0, 0, .12);
     }
 
@@ -63,14 +67,42 @@
   <script>
 
     class Proto {
-      constructor(configData) {
-        this.configData = configData;
+      constructor(prototypeData) {
+        this.prototypeData = prototypeData;
         this.buildUi();
       }
 
       buildUi() {
-        Object.keys(this.configData.artboards).forEach(id => {
-          let artboardData = this.configData.artboards[id];
+        this.buildArtboards();
+
+        if (this.prototypeData.title) {
+          document.title = this.prototypeData.title;
+        }
+
+        $(window).on('hashchange', () => {
+          this.setArtboardVisible(this.getUrlInfo().artboardId);
+        });
+
+        $(document).click(() => {
+          $(document.body).removeClass('highlight-hotspots');
+          let f = document.body.offsetWidth;
+          $(document.body).addClass('highlight-hotspots');
+        });
+
+        this.setArtboardVisible(this.getUrlInfo().artboardId);
+      }
+
+      getUrlInfo() {
+        let hash = window.location.hash;
+
+        return {
+          artboardId: hash ? hash.substring(1) : this.prototypeData.flowStartArtboardId,
+        };
+      }
+
+      buildArtboards() {
+        Object.keys(this.prototypeData.artboards).forEach(id => {
+          let artboardData = this.prototypeData.artboards[id];
           let $artboard = $('<div>')
               .addClass('artboard')
               .attr('data-artboard-id', id)
@@ -98,19 +130,11 @@
             });
           });
         });
-
-        $(document).click(() => {
-          $(document.body).removeClass('highlight-hotspots');
-          let f = document.body.offsetWidth;
-          $(document.body).addClass('highlight-hotspots');
-        });
-
-        this.gotoArtboard(this.configData.flowStartArtboardId);
       }
 
       gotoTarget(target) {
         if (target == 'back') {
-          // TODO
+          history.back();
           return;
         }
 
@@ -118,16 +142,20 @@
       }
 
       gotoArtboard(artboardId) {
+        window.location.href= '#' + artboardId;
+      }
+
+      setArtboardVisible(artboardId) {
         $('.artboard').removeClass('is-active');
         $(`.artboard[data-artboard-id="${artboardId}"]`).addClass('is-active');
       }
     }
 
-    Proto.init = configData => new Proto(configData);
-
   </script>
   <script>
-    Proto.init(/*###PROTOTYPEDATA###*/);
+    new Proto(
+      /*###PROTOTYPEDATA###*/
+    );
   </script>
 
 </body>

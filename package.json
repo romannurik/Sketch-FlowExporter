@@ -19,11 +19,11 @@
     "postinstall": "npm run build && skpm-link"
   },
   "devDependencies": {
-    "@skpm/builder": "^0.4.0"
+    "@skpm/builder": "^0.4.2"
   },
   "author": "Roman Nurik <roman@nurik.net>",
   "dependencies": {
-    "@skpm/dialog": "^0.2.0",
+    "@skpm/dialog": "^0.2.1",
     "@skpm/fs": "^0.1.2",
     "@skpm/path": "^0.1.0"
   }

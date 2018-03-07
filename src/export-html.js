@@ -1,18 +1,18 @@
 const sketch = require('sketch/dom');
 const {Document, Page, Artboard, Rectangle, Flow, HotSpot} = sketch;
-const async = require('sketch/async');
-const dialog = require('@skpm/dialog');
-const DataSupplier = require('sketch/data-supplier');
 const UI = require('sketch/ui');
-const Settings = require('sketch/settings');
+
+const dialog = require('@skpm/dialog');
 const fs = require('@skpm/fs');
 const path = require('@skpm/path');
+
 
 export default function(context) {
   let document = Document.getSelectedDocument();
   let page = document.selectedPage;
 
   let prototypeData = {
+    title: null,
     flowStartArtboardId: null,
     artboards: {},
   };
@@ -39,43 +39,55 @@ export default function(context) {
     }
   });
 
+  if (!firstArtboard) {
+    UI.message('❌ No artboards on the page');
+    return;
+  }
+
   // error out if not found
   if (!flowStartArtboard) {
     flowStartArtboard = firstArtboard;
   }
 
-  // ask user to pick a directory
-  let defaultExportPath = '';
-  if (document.sketchObject.fileURL()) {
-    defaultExportPath = path.dirname(String(document.sketchObject.fileURL().path()));
-    // defaultExportPath = path.join(defaultExportPath, 'kitchensink');
+  // ask user to pick a directory, with default export name pre-filled
+  let defaultExportPath = 'ExportedFlow';
+  let fileURL = document.sketchObject.fileURL();
+  if (fileURL) {
+    fileURL = String(fileURL.path());
+    // defaultExportPath = path.join(
+    //     path.dirname(fileURL),
+    let documentName = path.basename(fileURL).replace(/\.[^.]+$/, ''); // strip extension
+    prototypeData.title = documentName;
+    defaultExportPath = `${documentName}_ExportedFlow`;
   }
 
-  let filePath = dialog.showSaveDialog(document.sketchObject, {
+  let rootPath = dialog.showSaveDialog(document.sketchObject, {
     defaultPath: defaultExportPath,
     nameFieldLabel: 'Export directory name:',
     buttonLabel: 'Export',
-    // properties: ['openDirectory', 'createDirectory'],
   });
 
-  // given directory, output to it
-  if (!filePath) {
+  if (!rootPath) {
     return;
   }
 
-  let rootPath = filePath;
-  // UI.message(rootPath);
-  // return;
+  // confirm overwrite
   if (fs.existsSync(rootPath)) {
+    let confirm = (0 === dialog.showMessageBox(document.sketchObject, {
+      type: 'question',
+      buttons: ['Overwrite', 'Cancel'],
+      title: 'Directory exists, overwrite?',
+      message: 'The output directory you chose already exists. Are you sure you want to overwrite it?\n\n' + rootPath,
+      icon: NSImage.alloc().initWithContentsOfFile(context.plugin.urlForResourceNamed('icon.png').path()),
+    }));
+    if (!confirm) {
+      return;
+    }
     fs.rmdirSync(rootPath);
   }
 
+  // export!
   prototypeData.flowStartArtboardId = flowStartArtboard.id;
-
-  if (!flowStartArtboard) {
-    UI.message('❌ No artboards on the page');
-    return;
-  }
 
   let artboardsToProcess = [flowStartArtboard.id];
   let processedArtboards = {};
@@ -100,7 +112,7 @@ export default function(context) {
 
     // prepare metadata
     let artboardData = {
-      name: artboard.name,
+      title: artboard.name,
       width: artboard.frame.width,
       height: artboard.frame.height,
       hotspots: []
@@ -148,7 +160,6 @@ export default function(context) {
 
 function makeIndexHtml(context, prototypeData) {
   let template = fs.readFileSync(context.plugin.urlForResourceNamed('index_template.html').path(), {encoding: 'utf8'});
-  log(template.constructor);
   let expanded = template.replace('/*###PROTOTYPEDATA###*/', JSON.stringify(prototypeData, null, 2));
   return expanded;
 }
