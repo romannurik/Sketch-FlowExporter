@@ -1,4 +1,4 @@
-![https://raw.githubusercontent.com/romannurik/Sketch-FlowExporter/master/assets/icon.png](Flow Exporter Icon)
+![Flow Exporter Icon](https://raw.githubusercontent.com/romannurik/Sketch-FlowExporter/master/assets/icon.png)
 
 # Flow Exporter plugin for Sketch 49+
 
