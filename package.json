@@ -1,7 +1,7 @@
 {
   "name": "sketch-flowexporter",
   "description": "A Sketch plugin that exports prototype flows built with Sketch 49+ to HTML.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "engines": {
     "sketch": ">=3.0"
   },
@@ -13,15 +13,15 @@
       "assets/**/*"
     ]
   },
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/romannurik/Sketch-FlowExporter.git"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/romannurik/Sketch-FlowExporter.git"
   },
-	"license": "Apache-2.0",
-	"bugs": {
-		"url": "https://github.com/romannurik/Sketch-FlowExporter/issues"
-	},
-	"homepage": "https://github.com/romannurik/Sketch-FlowExporter#readme",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/romannurik/Sketch-FlowExporter/issues"
+  },
+  "homepage": "https://github.com/romannurik/Sketch-FlowExporter#readme",
   "scripts": {
     "build": "skpm-build",
     "watch": "skpm-build --watch",
