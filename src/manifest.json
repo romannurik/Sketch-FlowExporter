@@ -1,12 +1,15 @@
 {
-  "compatibleVersion": 3,
+  "identifier" : "net.nurik.roman.sketch.flowexporter",
+  "compatibleVersion": 49,
   "bundleVersion": 1,
   "icon": "icon.png",
   "commands": [
     {
       "name": "Export Prototype to HTML",
       "identifier": "export-html",
-      "script": "./export-html.js"
+      "script": "./export-html.js",
+      "description" : "Export prototype flow designed in Sketch to an HTML file.",
+      "icon" : "icon.png"
     }
   ],
   "menu": {
