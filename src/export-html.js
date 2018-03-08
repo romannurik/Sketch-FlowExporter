@@ -118,30 +118,45 @@ export default function(context) {
       hotspots: []
     };
 
-    walkLayerTree(artboard.sketchObject, nativeLayer => {
-      // TODO: switch to non-native walkLayerTree once MSHotSpotLayer has an API wrapper
-      let layer = sketch.fromNative(nativeLayer);
-      let nativeFlow = nativeLayer.flow();
-      if (nativeFlow) {
-        let rectangle = new Rectangle(nativeLayer.frame().x(), nativeLayer.frame().y(), nativeLayer.frame().width(), nativeLayer.frame().height());
-        let parent = nativeLayer.parentGroup();
-        while (parent && !(parent instanceof MSArtboardGroup)) {
-          rectangle.offset(parent.frame().x(), parent.frame().y());
-          parent = parent.parentGroup();
+    let findHotspotsUnderSubtree_ = (nativeParentGroup) => {
+      walkLayerTree(nativeParentGroup, (nativeLayer, setSublayers) => {
+        // TODO: switch to non-native walkLayerTree once MSHotSpotLayer has an API wrapper
+        let layer = sketch.fromNative(nativeLayer);
+        let nativeFlow = nativeLayer.flow();
+        if (nativeFlow) {
+          let frame = nativeLayer.frame();
+          let rectangle = new Rectangle(frame.x(), frame.y(), frame.width(), frame.height());
+          let parent = nativeLayer.parentGroup();
+          while (parent && !(parent instanceof MSArtboardGroup)) {
+            rectangle.offset(parent.frame().x(), parent.frame().y());
+            parent = parent.parentGroup();
+          }
+
+          let hotspotData = {
+            rectangle,
+            target: String(nativeFlow.destinationArtboardID()), // can be "back" (Flow.BackTarget)
+          };
+
+          if (!nativeFlow.isBackAction() && nativeFlow.isValidFlowConnection()) {
+            artboardsToProcess.push(String(nativeFlow.destinationArtboardID()));
+          }
+
+          artboardData.hotspots.push(hotspotData);
         }
 
-        let hotspotData = {
-          rectangle,
-          target: String(nativeFlow.destinationArtboardID()), // can be "back" (Flow.BackTarget)
-        };
-
-        if (!nativeFlow.isBackAction() && nativeFlow.isValidFlowConnection()) {
-          artboardsToProcess.push(String(nativeFlow.destinationArtboardID()));
+        if (nativeLayer instanceof MSSymbolInstance && doesSymbolInstanceHaveFlows(nativeLayer)) {
+          // symbol instance has flows inside it; make a copy of it,
+          // detach it to a group, find the hotspots, and then kill the copy
+          let dup = nativeLayer.copy();
+          nativeLayer.parentGroup().addLayer(dup);
+          dup = dup.detachByReplacingWithGroup();
+          findHotspotsUnderSubtree_(dup);
+          dup.removeFromParent();
         }
+      });
+    };
 
-        artboardData.hotspots.push(hotspotData);
-      }
-    });
+    findHotspotsUnderSubtree_(artboard.sketchObject);
 
     // store metadata
     prototypeData.artboards[artboard.id] = artboardData;
@@ -155,6 +170,23 @@ export default function(context) {
   fs.writeFileSync(htmlPath, makeIndexHtml(context, prototypeData));
   NSWorkspace.sharedWorkspace().openFile(htmlPath);
   UI.message('✅ Exported!');
+}
+
+
+function doesSymbolInstanceHaveFlows(nativeSymbolInstance) {
+  let hasFlows = false;
+  // TODO: cache true/false for a given master
+  walkLayerTree(nativeSymbolInstance.symbolMaster(), nativeLayer => {
+    if (nativeLayer.flow()) {
+      hasFlows = true;
+    }
+
+    if (nativeLayer instanceof MSSymbolInstance && doesSymbolInstanceHaveFlows(nativeLayer)) {
+      hasFlows = true;
+    }
+  });
+
+  return hasFlows;
 }
 
 
