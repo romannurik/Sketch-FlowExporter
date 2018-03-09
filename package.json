@@ -6,7 +6,7 @@
     "sketch": ">=3.0"
   },
   "skpm": {
-    "name": "FlowExporter",
+    "name": "Flow Exporter",
     "manifest": "src/manifest.json",
     "main": "plugin.sketchplugin",
     "assets": [
