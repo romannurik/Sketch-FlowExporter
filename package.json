@@ -8,7 +8,7 @@
   "skpm": {
     "name": "Flow Exporter",
     "manifest": "src/manifest.json",
-    "main": "plugin.sketchplugin",
+    "main": "FlowExporter.sketchplugin",
     "assets": [
       "assets/**/*"
     ]
