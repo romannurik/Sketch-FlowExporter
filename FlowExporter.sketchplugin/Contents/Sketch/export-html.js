@@ -110,7 +110,6 @@ Object.defineProperty(exports, "__esModule", {
 
 exports['default'] = function (context) {
   var document = Document.getSelectedDocument();
-  var page = document.selectedPage;
 
   var prototypeData = {
     title: null,
@@ -120,34 +119,42 @@ exports['default'] = function (context) {
 
   var artboardsById = {};
 
-  var flowStartArtboard = null;
-  var firstArtboard = null;
+  var flowStartArtboards = [];
+  var hasArtboards = null;
 
-  // find starting artboard
-  page.layers.forEach(function (artboard) {
-    if (!(artboard instanceof Artboard)) {
-      return;
-    }
+  // find a starting artboard
+  document.pages.forEach(function (page) {
+    page.layers.forEach(function (artboard) {
+      if (!(artboard instanceof Artboard)) {
+        return;
+      }
 
-    if (!firstArtboard) {
-      firstArtboard = artboard;
-    }
+      hasArtboards = true;
 
-    artboardsById[artboard.id] = artboard;
+      artboardsById[artboard.id] = artboard;
 
-    if (artboard.flowStartPoint) {
-      flowStartArtboard = artboard;
-    }
+      if (artboard.flowStartPoint) {
+        flowStartArtboards.push(artboard);
+      }
+    });
   });
 
-  if (!firstArtboard) {
-    UI.message('❌ No artboards on the page');
+  // error out if no artboards found
+  if (!hasArtboards) {
+    UI.message('❌ No artboards in this document');
     return;
   }
 
-  // error out if not found
-  if (!flowStartArtboard) {
-    flowStartArtboard = firstArtboard;
+  // find the best starting point
+  var flowStartArtboard = null;
+  if (flowStartArtboards.length) {
+    // there are artboards marked as starting points. find the best one
+    // TODO: better handling of multiple starting artboards
+    flowStartArtboard = flowStartArtboards[0];
+  } else {
+    // there aren't any artboards marked as starting points, pick a random artboard
+    // TODO: better handling of this (e.g. pick the top-left most one on the current page?)
+    flowStartArtboard = Object.values(artboardsById)[0];
   }
 
   // ask user to pick a directory, with default export name pre-filled
