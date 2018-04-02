@@ -1,8 +1,5 @@
 _sandbox
 
-# Don't include the .sketchplugin
-FlowExporter.sketchplugin
-
 # npm
 node_modules
 .npm

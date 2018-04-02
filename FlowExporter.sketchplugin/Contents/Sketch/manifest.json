@@ -1,0 +1,29 @@
+{
+  "identifier": "net.nurik.roman.sketch.flowexporter",
+  "compatibleVersion": 49,
+  "bundleVersion": 1,
+  "icon": "icon.png",
+  "commands": [
+    {
+      "name": "Export Prototype to HTML",
+      "identifier": "export-html",
+      "script": "export-html.js",
+      "description": "Export prototype flow designed in Sketch to an HTML file.",
+      "icon": "icon.png"
+    }
+  ],
+  "menu": {
+    "title": "🗳 Flow Exporter",
+    "items": [
+      "export-html"
+    ]
+  },
+  "version": "0.1.5",
+  "description": "A Sketch plugin that exports prototype flows built with Sketch 49+ to HTML.",
+  "homepage": "https://github.com/romannurik/Sketch-FlowExporter#readme",
+  "name": "Flow Exporter",
+  "disableCocoaScriptPreprocessor": true,
+  "appcast": "https://raw.githubusercontent.com/romannurik/Sketch-FlowExporter/master/.appcast.xml",
+  "author": "Roman Nurik",
+  "authorEmail": "roman@nurik.net"
+}
