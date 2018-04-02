@@ -54,6 +54,8 @@ export default function(context) {
     // there aren't any artboards marked as starting points, pick a random artboard
     // TODO: better handling of this (e.g. pick the top-left most one on the current page?)
     flowStartArtboard = Object.values(artboardsById)[0];
+    // TODO: should we set the chosen one as the prototyping start point?
+    // flowStartArtboard.flowStartPoint = true;
   }
 
   // ask user to pick a directory, with default export name pre-filled
@@ -150,8 +152,8 @@ export default function(context) {
             target = hotspotOverrides[layerId];
           }
 
-          if (target) {
-            if (target !== String(Flow.BackTarget)/* && nativeFlow.isValidFlowConnection()*/) {
+          if (target && nativeFlow.isValidFlowConnection()) {
+            if (target !== String(Flow.BackTarget)) {
               artboardsToProcess.push(target);
             }
 
