@@ -1,3 +1,19 @@
+/*
+ * Copyright 2018 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 const sketch = require('sketch/dom');
 const {Document, Page, Artboard, Rectangle, Flow, HotSpot} = sketch;
 const UI = require('sketch/ui');
@@ -5,6 +21,9 @@ const UI = require('sketch/ui');
 const dialog = require('@skpm/dialog');
 const fs = require('@skpm/fs');
 const path = require('@skpm/path');
+
+import * as common from './lib/common';
+import * as prefs from './prefs';
 
 
 export default function(context) {
@@ -116,13 +135,7 @@ export default function(context) {
     processedArtboards[artboard.id] = true;
 
     // export the artboard image to PNG
-    sketch.export(artboard, {
-      formats: 'png',
-      'use-id-for-name': true,
-      overwriting: true,
-      output: rootPath,
-      // scales: '2',
-    });
+    exportArtboard(context, rootPath, artboard);
 
     // prepare metadata
     let artboardData = {
@@ -133,7 +146,7 @@ export default function(context) {
     };
 
     let findHotspotsUnderSubtree_ = (nativeParentGroup, hotspotOverrides) => {
-      walkLayerTree(nativeParentGroup, (nativeLayer, setSublayers) => {
+      common.walkLayerTree(nativeParentGroup, (nativeLayer, setSublayers) => {
         // TODO: switch to non-native walkLayerTree once MSHotSpotLayer has an API wrapper
         let layer = sketch.fromNative(nativeLayer);
         let layerId = String(nativeLayer.objectID());
@@ -186,15 +199,39 @@ export default function(context) {
 
   let htmlPath = `${rootPath}/index.html`;
   fs.writeFileSync(htmlPath, makeIndexHtml(context, prototypeData));
+
+  ['jquery.min.js'].forEach(addlFile => {
+    fs.copyFileSync(context.plugin.urlForResourceNamed(addlFile).path(), `${rootPath}/${addlFile}`);
+  });
+
   NSWorkspace.sharedWorkspace().openFile(htmlPath);
   UI.message('✅ Exported!');
+}
+
+
+function exportArtboard(context, destPath, artboard) {
+  // TODO: when sketch.export offers more control, switch to it
+  // sketch.export(artboard, {
+  //   formats: 'png',
+  //   'use-id-for-name': true,
+  //   overwriting: true,
+  //   output: destPath,
+  //   scales: String(prefs.resolveDocumentPrefs(context, context.document).exportScale),
+  // });
+  var ancestry = MSImmutableLayerAncestry.ancestryWithMSLayer_(artboard.sketchObject);
+  var exportRequest = MSExportRequest.exportRequestsFromLayerAncestry_(ancestry).firstObject();
+  exportRequest.format = 'png';
+  exportRequest.scale = prefs.resolveDocumentPrefs(context, context.document).exportScale;
+  context.document.saveArtboardOrSlice_toFile_(
+      exportRequest,
+      path.join(destPath, artboard.sketchObject.objectID() + '.png'));
 }
 
 
 function doesSymbolInstanceHaveFlows(nativeSymbolInstance) {
   let hasFlows = false;
   // TODO: cache true/false for a given master
-  walkLayerTree(nativeSymbolInstance.symbolMaster(), nativeLayer => {
+  common.walkLayerTree(nativeSymbolInstance.symbolMaster(), nativeLayer => {
     if (nativeLayer.flow()) {
       hasFlows = true;
     }
@@ -210,43 +247,19 @@ function doesSymbolInstanceHaveFlows(nativeSymbolInstance) {
 
 function makeIndexHtml(context, prototypeData) {
   let template = fs.readFileSync(context.plugin.urlForResourceNamed('index_template.html').path(), {encoding: 'utf8'});
-  let expanded = template.replace('/*###PROTOTYPEDATA###*/', JSON.stringify(prototypeData, null, 2));
+  let expanded = hydrate(template, {
+    prototypeData,
+    showHotspots: prefs.resolveDocumentPrefs(context, context.document).showHotspots,
+  });
   return expanded;
 }
 
 
-/**
- * Returns a JavaScript array copy of the given NSArray.
- */
-export function arrayFromNSArray(nsArray) {
-  let arr = [];
-  for (let i = 0; i < nsArray.count(); i++) {
-    arr.push(nsArray.objectAtIndex(i));
-  }
-  return arr;
-}
-
-
-/**
- * Depth-first traversal for the Sketch DOM
- */
-export function walkLayerTree(rootLayer, visitFunction) {
-  let visit_ = layer => {
-    // visit this layer
-    visitFunction(layer);
-
-    // visit children
-    let subLayers;
-    if ('layers' in layer) {
-      subLayers = arrayFromNSArray(layer.layers());
-    } else if ('artboards' in layer) {
-      subLayers = arrayFromNSArray(layer.artboards());
-    } else {
-      return;
-    }
-
-    subLayers.forEach(subLayer => visit_(subLayer));
-  };
-
-  visit_(rootLayer);
+function hydrate(template, context) {
+  return template.replace(/<%=(.*)%>/g, (_, expr) => {
+    let decls = Object.keys(context)
+        .map(key => `var ${key} = ${JSON.stringify(context[key])};`)
+        .join('');
+    return Function(`"use strict";${decls};return ${expr};`)();
+  });
 }

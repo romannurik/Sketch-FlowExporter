@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="jquery.min.js"></script>
   <style>
     html, body {
       margin: 0;
@@ -14,8 +14,12 @@
     }
 
     .prototype-container {
-      position: relative;
+      position: absolute;
       height: 100%;
+      overflow: scroll;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
     }
 
     .artboard {
@@ -23,19 +27,24 @@
       left: 0;
       top: 0;
       opacity: 0;
-      visibility: hidden;
+      display: none;
       box-shadow: 0 0 0 1px rgba(0, 0, 0, .12);
+      background-size: contain;
+      overflow: hidden; /* don't allow hotspots to overflow */
     }
 
     .artboard.is-active {
       opacity: 1;
-      visibility: visible;
+      display: block;
     }
 
     .hotspot {
       cursor: pointer;
       position: absolute;
       opacity: 0;
+    }
+
+    body[can-show-hotspots] .hotspot {
       background-color: rgba(239, 108, 0, .2);
       box-shadow:
           0 0 0 3px rgba(239, 108, 0, .5) inset,
@@ -59,7 +68,7 @@
     }
   </style>
 </head>
-<body>
+<body <%= showHotspots ? 'can-show-hotspots' : '' %>>
 
   <div class="prototype-container">
   </div>
@@ -84,12 +93,26 @@
         });
 
         $(document).click(() => {
+          if (this.shouldSuppressHotspotReveal_) {
+            return;
+          }
+
           $(document.body).removeClass('highlight-hotspots');
           let f = document.body.offsetWidth;
           $(document.body).addClass('highlight-hotspots');
         });
 
+        $(window).on('resize', () => this.resize());
+
         this.setArtboardVisible(this.getUrlInfo().artboardId);
+
+        this.resize();
+      }
+
+      resize() {
+        let xScale = window.innerHeight / this.prototypeHeight;
+        let yScale = window.innerWidth / this.prototypeWidth;
+        $('.prototype-container').css('zoom', Math.min(1, Math.min(xScale, yScale)));
       }
 
       getUrlInfo() {
@@ -112,6 +135,16 @@
                 height: artboardData.height,
               })
               .appendTo('.prototype-container');
+
+          if (id == this.prototypeData.flowStartArtboardId) {
+            // this is the start artboard
+            this.prototypeWidth = artboardData.width;
+            this.prototypeHeight = artboardData.height;
+            $('.prototype-container').css({
+              width: this.prototypeWidth,
+              height: this.prototypeHeight
+            });
+          }
 
           artboardData.hotspots.forEach(hotspotData => {
             let $hotspot = $('<div>')
@@ -143,10 +176,11 @@
 
       gotoArtboard(artboardId) {
         window.location.href= '#' + artboardId;
-        document.body.scrollTo(0, 0);
+        $('.prototype-container').scrollTo(0, 0);
       }
 
       setArtboardVisible(artboardId) {
+        $(document.body).removeClass('highlight-hotspots');
         $('.artboard').removeClass('is-active');
         $(`.artboard[data-artboard-id="${artboardId}"]`).addClass('is-active');
       }
@@ -155,7 +189,7 @@
   </script>
   <script>
     new Proto(
-      /*###PROTOTYPEDATA###*/
+      <%= JSON.stringify(prototypeData) %>
     );
   </script>
 

@@ -23,18 +23,21 @@
   },
   "homepage": "https://github.com/romannurik/Sketch-FlowExporter#readme",
   "scripts": {
-    "build": "skpm-build",
-    "watch": "skpm-build --watch",
-    "start": "skpm-build --watch --run",
+    "nibs": "ibtool --compile assets/Prefs.nib src/Prefs.xib",
+    "build": "npm run nibs && skpm-build",
+    "watch": "npm run nibs && skpm-build --watch",
     "postinstall": "npm run build && skpm-link"
   },
   "devDependencies": {
-    "@skpm/builder": "^0.4.2"
+    "@babel/plugin-proposal-object-rest-spread": "^7.0.0-beta.44",
+    "@skpm/builder": "^0.5.3"
   },
   "author": "Roman Nurik <roman@nurik.net>",
   "dependencies": {
     "@skpm/dialog": "^0.2.1",
     "@skpm/fs": "^0.1.2",
-    "@skpm/path": "^0.1.0"
+    "@skpm/path": "^0.1.0",
+    "mocha-js-delegate": "^0.1.1",
+    "sketch-nibui": "^0.1.0"
   }
 }

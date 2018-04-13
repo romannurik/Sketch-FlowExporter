@@ -7,15 +7,23 @@
     {
       "name": "Export Prototype to HTML",
       "identifier": "export-html",
-      "script": "./export-html.js",
+      "script": "./command-export-html.js",
       "description" : "Export prototype flow designed in Sketch to an HTML file.",
+      "icon" : "icon.png"
+    },
+    {
+      "name": "Set Prototype Export Options",
+      "identifier": "export-options",
+      "script": "./command-export-options.js",
+      "description" : "Customize options for exporting your prototype flow to HTML.",
       "icon" : "icon.png"
     }
   ],
   "menu": {
     "title": "🗳 Flow Exporter",
     "items": [
-      "export-html"
+      "export-html",
+      "export-options"
     ]
   }
 }
