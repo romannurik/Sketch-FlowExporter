@@ -111,7 +111,7 @@ export default function(context) {
     if (!confirm) {
       return;
     }
-    fs.rmdirSync(rootPath);
+    common.rmdirRecursive(rootPath);
   }
 
   // export!

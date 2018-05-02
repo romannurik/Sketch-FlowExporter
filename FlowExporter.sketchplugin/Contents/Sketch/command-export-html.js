@@ -1835,7 +1835,7 @@ var path = __webpack_require__(/*! @skpm/path */ "./node_modules/@skpm/path/inde
       return;
     }
 
-    fs.rmdirSync(rootPath);
+    _lib_common__WEBPACK_IMPORTED_MODULE_0__["rmdirRecursive"](rootPath);
   } // export!
 
 
@@ -1993,13 +1993,14 @@ function hydrate(template, context) {
 /*!***************************!*\
   !*** ./src/lib/common.js ***!
   \***************************/
-/*! exports provided: arrayFromNSArray, walkLayerTree */
+/*! exports provided: arrayFromNSArray, walkLayerTree, rmdirRecursive */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "arrayFromNSArray", function() { return arrayFromNSArray; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "walkLayerTree", function() { return walkLayerTree; });
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "rmdirRecursive", function() { return rmdirRecursive; });
 /*
  * Copyright 2018 Google Inc.
  *
@@ -2053,6 +2054,14 @@ function walkLayerTree(rootLayer, visitFunction) {
   };
 
   visit_(rootLayer);
+}
+/**
+ * Deletes the given file or directory recursively (i.e. it and its
+ * subfolders).
+ */
+
+function rmdirRecursive(path) {
+  NSFileManager.defaultManager().removeItemAtPath_error_(rmdirRecursive, null);
 }
 
 /***/ }),

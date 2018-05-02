@@ -49,3 +49,12 @@ export function walkLayerTree(rootLayer, visitFunction) {
 
   visit_(rootLayer);
 }
+
+
+/**
+ * Deletes the given file or directory recursively (i.e. it and its
+ * subfolders).
+ */
+export function rmdirRecursive(path) {
+  NSFileManager.defaultManager().removeItemAtPath_error_(rmdirRecursive, null);
+}
