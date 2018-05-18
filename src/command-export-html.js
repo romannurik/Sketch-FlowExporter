@@ -146,46 +146,49 @@ export default function(context) {
     };
 
     let findHotspotsUnderSubtree_ = (nativeParentGroup, hotspotOverrides) => {
-      common.walkLayerTree(nativeParentGroup, (nativeLayer, setSublayers) => {
-        // TODO: switch to non-native walkLayerTree once MSHotSpotLayer has an API wrapper
-        let layer = sketch.fromNative(nativeLayer);
+      let layersWithFlow = common.getAllLayersMatchingPredicate(
+          nativeParentGroup,
+          NSPredicate.predicateWithFormat('flow != nil'));
+      for (let nativeLayer of layersWithFlow) {
         let layerId = String(nativeLayer.objectID());
         let nativeFlow = nativeLayer.flow();
-        if (nativeFlow) {
-          let frame = nativeLayer.frame();
-          let rectangle = new Rectangle(frame.x(), frame.y(), frame.width(), frame.height());
-          let parent = nativeLayer.parentGroup();
-          while (parent && !(parent instanceof MSArtboardGroup || parent instanceof MSSymbolMaster)) {
-            rectangle.offset(parent.frame().x(), parent.frame().y());
-            parent = parent.parentGroup();
-          }
-
-          let target = String(nativeFlow.destinationArtboardID());
-          if (layerId in hotspotOverrides) {
-            target = hotspotOverrides[layerId];
-          }
-
-          if (target && nativeFlow.isValidFlowConnection()) {
-            if (target !== String(Flow.BackTarget)) {
-              artboardsToProcess.push(target);
-            }
-
-            let hotspotData = {rectangle, target};
-            artboardData.hotspots.push(hotspotData);
-          }
+        let frame = nativeLayer.frame();
+        let rectangle = new Rectangle(frame.x(), frame.y(), frame.width(), frame.height());
+        let parent = nativeLayer.parentGroup();
+        while (parent && !(parent instanceof MSArtboardGroup || parent instanceof MSSymbolMaster)) {
+          rectangle.offset(parent.frame().x(), parent.frame().y());
+          parent = parent.parentGroup();
         }
 
-        if (nativeLayer instanceof MSSymbolInstance && doesSymbolInstanceHaveFlows(nativeLayer)) {
-          // symbol instance has flows inside it; make a copy of it,
-          // detach it to a group, find the hotspots, and then kill the copy
-          let overrides = {...nativeLayer.overrides(), ...hotspotOverrides};
-          let dup = nativeLayer.copy();
-          nativeLayer.parentGroup().addLayer(dup);
-          dup = dup.detachByReplacingWithGroup();
-          findHotspotsUnderSubtree_(dup, overrides);
-          dup.removeFromParent();
+        let target = String(nativeFlow.destinationArtboardID());
+        if (layerId in hotspotOverrides) {
+          target = hotspotOverrides[layerId];
         }
-      });
+
+        if (target && nativeFlow.isValidFlowConnection()) {
+          if (target !== String(Flow.BackTarget)) {
+            artboardsToProcess.push(target);
+          }
+
+          let hotspotData = {rectangle, target};
+          artboardData.hotspots.push(hotspotData);
+        }
+      }
+
+      let symbolInstances = common.getAllLayersMatchingPredicate(
+          nativeParentGroup,
+          NSPredicate.predicateWithFormat('className == %@', 'MSSymbolInstance'))
+          .filter(symbolInstance => doesSymbolInstanceHaveFlows(symbolInstance));
+      for (let symbolInstance of symbolInstances) {
+        // symbol instance has flows inside it; make a copy of it,
+        // detach it to a group, find the hotspots, and then kill the copy
+        let overrides = {...symbolInstance.overrides(), ...hotspotOverrides};
+        let dup = symbolInstance.copy();
+        symbolInstance.parentGroup().addLayer(dup);
+        dup = dup.detachByReplacingWithGroup();
+        findHotspotsUnderSubtree_(dup, overrides);
+        dup.removeFromParent();
+      }
     };
 
     findHotspotsUnderSubtree_(artboard.sketchObject, {});
@@ -229,19 +232,24 @@ function exportArtboard(context, destPath, artboard) {
 
 
 function doesSymbolInstanceHaveFlows(nativeSymbolInstance) {
-  let hasFlows = false;
   // TODO: cache true/false for a given master
-  common.walkLayerTree(nativeSymbolInstance.symbolMaster(), nativeLayer => {
-    if (nativeLayer.flow()) {
-      hasFlows = true;
-    }
+  if (common.getAllLayersMatchingPredicate(
+    nativeSymbolInstance.symbolMaster(),
+    NSPredicate.predicateWithFormat('flow != nil')).length) {
+    return true;
+  }
 
-    if (nativeLayer instanceof MSSymbolInstance && doesSymbolInstanceHaveFlows(nativeLayer)) {
-      hasFlows = true;
+  // check for symbol instance children that have flows
+  let symbolInstances = common.getAllLayersMatchingPredicate(
+      nativeSymbolInstance.symbolMaster(),
+      NSPredicate.predicateWithFormat('className == %@', 'MSSymbolInstance'));
+  for (let symbolInstance of symbolInstances) {
+    if (doesSymbolInstanceHaveFlows(symbolInstance)) {
+      return true;
     }
-  });
+  }
 
-  return hasFlows;
+  return false;
 }
 
 

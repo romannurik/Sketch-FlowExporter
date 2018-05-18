@@ -27,34 +27,29 @@ export function arrayFromNSArray(nsArray) {
 
 
 /**
- * Depth-first traversal for the Sketch DOM
- */
-export function walkLayerTree(rootLayer, visitFunction) {
-  let visit_ = layer => {
-    // visit this layer
-    visitFunction(layer);
-
-    // visit children
-    let subLayers;
-    if ('layers' in layer) {
-      subLayers = arrayFromNSArray(layer.layers());
-    } else if ('artboards' in layer) {
-      subLayers = arrayFromNSArray(layer.artboards());
-    } else {
-      return;
-    }
-
-    subLayers.forEach(subLayer => visit_(subLayer));
-  };
-
-  visit_(rootLayer);
-}
-
-
-/**
  * Deletes the given file or directory recursively (i.e. it and its
  * subfolders).
  */
 export function rmdirRecursive(path) {
   NSFileManager.defaultManager().removeItemAtPath_error_(rmdirRecursive, null);
+}
+
+
+
+/**
+ * Returns the first layer matching the given NSPredicate
+ *
+ * @param {MSDocument|MSLayerGroup} parent The document or layer group to search.
+ * @param {NSPredicate} predicate Search predicate
+ */
+export function getAllLayersMatchingPredicate(parent, predicate) {
+  if (parent instanceof MSDocument) {
+    // MSDocument
+    return parent.pages().reduce(
+        (acc, page) => acc.concat(getAllLayersMatchingPredicate(page, predicate)),
+        []);
+  }
+
+  // assume MSLayerGroup
+  return Array.from(parent.children().filteredArrayUsingPredicate(predicate));
 }
