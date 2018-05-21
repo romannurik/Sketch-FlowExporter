@@ -1,7 +1,6 @@
 {
   "search.exclude": {
     "**/node_modules": true,
-    "*.sketchplugin": true,
-    "web-dist": true,
+    "*.sketchplugin": true
   }
 }

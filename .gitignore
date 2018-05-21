@@ -1,5 +1,8 @@
 _sandbox
 
+# Sketch Runner no longer requires this in the repo
+*.sketchplugin
+
 # npm
 node_modules
 .npm
