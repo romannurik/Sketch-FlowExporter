@@ -6,14 +6,12 @@ This plugin exports prototype flows (artboards you link together) to HTML, which
 
 # Installation
 
-You can install the plugin with Sketch Runner.
+* [Download the latest release](https://github.com/romannurik/Sketch-FlowExporter/releases/latest) and double-click the `.sketchplugin` file to install.
 
-<a href="http://bit.ly/SketchRunnerWebsite">
-  <img src="http://bit.ly/RunnerBadgeBlue" width="160">
-</a>
+* Or you can install the plugin with the wonderful [Sketch Runner](http://bit.ly/SketchRunnerWebsite) plugin.
 
-Alternatively, just download the latest [release](https://github.com/romannurik/Sketch-FlowExporter/releases) and double-click the `.sketchplugin` file to install.
+  <a href="http://bit.ly/SketchRunnerWebsite"><img src="http://bit.ly/RunnerBadgeBlue" width="160"></a>
 
-## skpm
+# Build instructions
 
 _This plugin was created using `skpm`. For a detailed explanation on how things work, checkout the [skpm Readme](https://github.com/skpm/skpm/blob/master/README.md)._
