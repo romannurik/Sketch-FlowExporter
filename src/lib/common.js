@@ -31,7 +31,7 @@ export function arrayFromNSArray(nsArray) {
  * subfolders).
  */
 export function rmdirRecursive(path) {
-  NSFileManager.defaultManager().removeItemAtPath_error_(rmdirRecursive, null);
+  NSFileManager.defaultManager().removeItemAtPath_error_(path, null);
 }
 
 
