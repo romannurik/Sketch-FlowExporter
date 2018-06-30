@@ -53,3 +53,13 @@ export function getAllLayersMatchingPredicate(parent, predicate) {
   // assume MSLayerGroup
   return Array.from(parent.children().filteredArrayUsingPredicate(predicate));
 }
+
+
+/**
+ * Polyfill for MSLayer.isFixedToViewport, available only in Sketch 51+
+ *
+ * @param {MSLayer} layer
+ */
+export function isLayerFixedToViewport(layer) {
+  return (layer.isFixedToViewport && layer.isFixedToViewport());
+}

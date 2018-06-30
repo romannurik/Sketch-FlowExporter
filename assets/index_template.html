@@ -16,26 +16,54 @@
     .prototype-container {
       position: absolute;
       height: 100%;
-      overflow: scroll;
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
+    }
+
+    .prototype-container ::-webkit-scrollbar {
+      display: none;
     }
 
     .artboard {
       position: absolute;
       left: 0;
       top: 0;
+      right: 0;
+      bottom: 0;
       opacity: 0;
       display: none;
       box-shadow: 0 0 0 1px rgba(0, 0, 0, .12);
-      background-size: contain;
-      overflow: hidden; /* don't allow hotspots to overflow */
+      overflow: hidden;
     }
 
     .artboard.is-active {
       opacity: 1;
       display: block;
+    }
+
+    .artboard-scroll-container,
+    .artboard-fixed-container {
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    .artboard-fixed-container {
+      pointer-events: none;
+    }
+
+    .artboard-scroll-container {
+      overflow: scroll;
+    }
+
+    .artboard-content {
+      position: absolute;
+      left: 0;
+      top: 0;
+      background-size: contain;
     }
 
     .hotspot {
@@ -105,14 +133,24 @@
         $(window).on('resize', () => this.resize());
 
         this.setArtboardVisible(this.getUrlInfo().artboardId);
-
-        this.resize();
       }
 
       resize() {
-        let xScale = window.innerHeight / this.prototypeHeight;
-        let yScale = window.innerWidth / this.prototypeWidth;
-        $('.prototype-container').css('zoom', Math.min(1, Math.min(xScale, yScale)));
+        let width = this.startArtboard.presetWidth || this.startArtboard.width;
+        let height = this.startArtboard.presetHeight || this.startArtboard.height;
+        if (this.currentArtboard.presetWidth && this.currentArtboard.presetHeight) {
+          width = this.currentArtboard.presetWidth;
+          height = this.currentArtboard.presetHeight;
+        }
+
+        let xScale = window.innerHeight / height;
+        let yScale = window.innerWidth / width;
+        $('.prototype-container')
+            .css({
+              width: width,
+              height: height,
+              zoom: Math.min(1, Math.min(xScale, yScale)),
+            });
       }
 
       getUrlInfo() {
@@ -129,21 +167,40 @@
           let $artboard = $('<div>')
               .addClass('artboard')
               .attr('data-artboard-id', id)
+              .appendTo('.prototype-container');
+
+          // add scrollable content
+          let $artboardScrollContainer = $('<div>')
+              .addClass('artboard-scroll-container')
+              .appendTo($artboard);
+          let $artboardScrollableContent = $('<div>')
+              .addClass('artboard-content')
               .css({
                 backgroundImage: `url(${id}.png)`,
                 width: artboardData.width,
                 height: artboardData.height,
               })
-              .appendTo('.prototype-container');
+              .appendTo($artboardScrollContainer);
+
+          // add fixed content
+          if (artboardData.hasFixedLayers) {
+            let $artboardFixedContainer = $('<div>')
+                .addClass('artboard-fixed-container')
+                .appendTo($artboard);
+            let $artboardFixedContent = $('<div>')
+                .addClass('artboard-content')
+                .css({
+                  backgroundImage: `url(${id}_fixed.png)`,
+                  width: artboardData.width,
+                  height: artboardData.height,
+                })
+                .appendTo($artboardFixedContainer);
+          }
 
           if (id == this.prototypeData.flowStartArtboardId) {
             // this is the start artboard
-            this.prototypeWidth = artboardData.width;
-            this.prototypeHeight = artboardData.height;
-            $('.prototype-container').css({
-              width: this.prototypeWidth,
-              height: this.prototypeHeight
-            });
+            this.startArtboard = artboardData;
+            this.currentArtboard = artboardData;
           }
 
           artboardData.hotspots.forEach(hotspotData => {
@@ -156,7 +213,9 @@
                 width: hotspotData.rectangle.width,
                 height: hotspotData.rectangle.height,
               })
-              .appendTo($artboard);
+              .appendTo(hotspotData.isFixed
+                  ? $artboard // don't add to $artboardFixedContent because of pointer-events:none
+                  : $artboardScrollableContent);
             $hotspot.click(event => {
               this.gotoTarget(hotspotData.target)
               event.stopPropagation();
@@ -176,13 +235,18 @@
 
       gotoArtboard(artboardId) {
         window.location.href= '#' + artboardId;
-        $('.prototype-container').scrollTo(0, 0);
       }
 
       setArtboardVisible(artboardId) {
+        this.currentArtboard = this.prototypeData.artboards[artboardId];
+
+        $('.artboard-scroll-container').scrollLeft(0).scrollTop(0);
+
         $(document.body).removeClass('highlight-hotspots');
         $('.artboard').removeClass('is-active');
         $(`.artboard[data-artboard-id="${artboardId}"]`).addClass('is-active');
+
+        this.resize();
       }
     }
 

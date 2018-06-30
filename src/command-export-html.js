@@ -135,15 +135,22 @@ export default function(context) {
     processedArtboards[artboard.id] = true;
 
     // export the artboard image to PNG
-    exportArtboard(context, rootPath, artboard);
+    let {hasFixedLayers} = exportArtboard(context, rootPath, artboard);
 
     // prepare metadata
     let artboardData = {
       title: artboard.name,
       width: artboard.frame.width,
       height: artboard.frame.height,
-      hotspots: []
+      hotspots: [],
+      hasFixedLayers
     };
+
+    let preset = artboard.sketchObject.preset();
+    if (preset) {
+      artboardData.presetWidth = preset.width();
+      artboardData.presetHeight = preset.height();
+    }
 
     let findHotspotsUnderSubtree_ = (nativeParentGroup, hotspotOverrides) => {
       let layersWithFlow = common.getAllLayersMatchingPredicate(
@@ -154,9 +161,11 @@ export default function(context) {
         let nativeFlow = nativeLayer.flow();
         let frame = nativeLayer.frame();
         let rectangle = new Rectangle(frame.x(), frame.y(), frame.width(), frame.height());
+        let isFixed = common.isLayerFixedToViewport(nativeLayer);
         let parent = nativeLayer.parentGroup();
         while (parent && !(parent instanceof MSArtboardGroup || parent instanceof MSSymbolMaster)) {
           rectangle.offset(parent.frame().x(), parent.frame().y());
+          isFixed = isFixed || common.isLayerFixedToViewport(parent);
           parent = parent.parentGroup();
         }
 
@@ -170,8 +179,7 @@ export default function(context) {
             artboardsToProcess.push(target);
           }
 
-          let hotspotData = {rectangle, target};
-          artboardData.hotspots.push(hotspotData);
+          artboardData.hotspots.push({rectangle, target, isFixed});
         }
       }
 
@@ -221,13 +229,54 @@ function exportArtboard(context, destPath, artboard) {
   //   output: destPath,
   //   scales: String(prefs.resolveDocumentPrefs(context, context.document).exportScale),
   // });
-  var ancestry = MSImmutableLayerAncestry.ancestryWithMSLayer_(artboard.sketchObject);
-  var exportRequest = MSExportRequest.exportRequestsFromLayerAncestry_(ancestry).firstObject();
-  exportRequest.format = 'png';
-  exportRequest.scale = prefs.resolveDocumentPrefs(context, context.document).exportScale;
-  context.document.saveArtboardOrSlice_toFile_(
-      exportRequest,
-      path.join(destPath, artboard.sketchObject.objectID() + '.png'));
+
+  // we're going to do two exports: first, all the non-fixed layers, and then, all the
+  // fixed layers. make a copy of the artboard because we're going to do a lot of
+  // showing and hiding things
+  let hasFixedLayers = false;
+
+  let artboardCopy = artboard.sketchObject.copy();
+  let visibleFixedLayers = common.getAllLayersMatchingPredicate(
+      artboardCopy,
+      NSPredicate.predicateWithFormat('(isFixedToViewport = 1) AND (isVisible = 1)'));
+  let layersNotToHideForFixedExport = new Set();
+  layersNotToHideForFixedExport.add(artboardCopy); // don't hide the artboard itself
+  for (let fixedLayer of visibleFixedLayers) {
+    // don't hide the fixed layer or any descendants
+    Array.from(fixedLayer.children()).forEach(l => layersNotToHideForFixedExport.add(l));
+    // don't hide any of its ancestors
+    let layer = fixedLayer;
+    while (layer && !(layer instanceof MSPage) && !(layer instanceof MSArtboardGroup)) {
+      layersNotToHideForFixedExport.add(layer);
+      layer = layer.parentGroup();
+    }
+  }
+
+  // do one export of the non-fixed content by hiding all fixed layers
+  visibleFixedLayers.forEach(l => l.setIsVisible(false));
+  doExport('');
+  if (visibleFixedLayers.length) {
+    // show the fixed layers again, hide everything else, and export
+    visibleFixedLayers.forEach(l => l.setIsVisible(true));
+    Array.from(artboardCopy.children())
+        .filter(l => !layersNotToHideForFixedExport.has(l))
+        .forEach(l => l.setIsVisible(false));
+    artboardCopy.setIncludeBackgroundColorInExport(false);
+    doExport('_fixed');
+    hasFixedLayers = true;
+  }
+
+  return {hasFixedLayers};
+
+  function doExport(suffix) {
+    let ancestry = MSImmutableLayerAncestry.ancestryWithMSLayer_(artboardCopy);
+    let exportRequest = MSExportRequest.exportRequestsFromLayerAncestry_(ancestry).firstObject();
+    exportRequest.format = 'png';
+    exportRequest.scale = prefs.resolveDocumentPrefs(context, context.document).exportScale;
+    context.document.saveArtboardOrSlice_toFile_(
+        exportRequest,
+        path.join(destPath, artboard.sketchObject.objectID() + suffix + '.png'));
+  }
 }
 
 
