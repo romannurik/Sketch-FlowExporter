@@ -15,7 +15,7 @@
  */
 
 const sketch = require('sketch/dom');
-const {Document, Page, Artboard, Rectangle, Flow, HotSpot} = sketch;
+const {Document, Artboard, Rectangle, Flow} = sketch;
 const UI = require('sketch/ui');
 
 const dialog = require('@skpm/dialog');
@@ -134,23 +134,34 @@ export default function(context) {
 
     processedArtboards[artboard.id] = true;
 
+    // get preset info to determine if the viewport should be different from the artboard size
+    // (i.e. there should be scrolling);
+    let artboardSize = {
+      width: artboard.frame.width,
+      height: artboard.frame.height,
+    };
+    let viewportSize = artboardSize;
+    let preset = artboard.sketchObject.preset();
+    if (preset) {
+      viewportSize = {
+        width: preset.width(),
+        height: preset.height()
+      };
+    }
+
     // export the artboard image to PNG
-    let {hasFixedLayers} = exportArtboard(context, rootPath, artboard);
+    let {hasFixedLayers} = exportArtboard(context, rootPath, artboard, viewportSize);
 
     // prepare metadata
     let artboardData = {
       title: artboard.name,
       width: artboard.frame.width,
       height: artboard.frame.height,
+      viewportWidth: viewportSize.width,
+      viewportHeight: viewportSize.height,
       hotspots: [],
       hasFixedLayers
     };
-
-    let preset = artboard.sketchObject.preset();
-    if (preset) {
-      artboardData.presetWidth = preset.width();
-      artboardData.presetHeight = preset.height();
-    }
 
     let findHotspotsUnderSubtree_ = (nativeParentGroup, hotspotOverrides) => {
       let layersWithFlow = common.getAllLayersMatchingPredicate(
@@ -162,11 +173,27 @@ export default function(context) {
         let frame = nativeLayer.frame();
         let rectangle = new Rectangle(frame.x(), frame.y(), frame.width(), frame.height());
         let isFixed = common.isLayerFixedToViewport(nativeLayer);
+        let outermostFixedToViewportParent = null;
         let parent = nativeLayer.parentGroup();
         while (parent && !(parent instanceof MSArtboardGroup || parent instanceof MSSymbolMaster)) {
           rectangle.offset(parent.frame().x(), parent.frame().y());
-          isFixed = isFixed || common.isLayerFixedToViewport(parent);
+          if (common.isLayerFixedToViewport(parent)) {
+            outermostFixedToViewportParent = parent;
+          }
           parent = parent.parentGroup();
+        }
+
+        if (outermostFixedToViewportParent) {
+          isFixed = true;
+          // hotspots inside floating/fixed layers that are a fixed distance to the
+          // right or bottom of the screen should be positioned based on viewport size,
+          // not artboard size
+          if (outermostFixedToViewportParent.hasFixedRight()) {
+            rectangle.offset(viewportSize.width - artboardSize.width, 0);
+          }
+          if (outermostFixedToViewportParent.hasFixedBottom()) {
+            rectangle.offset(0, viewportSize.height - artboardSize.height);
+          }
         }
 
         let target = String(nativeFlow.destinationArtboardID());
@@ -191,9 +218,15 @@ export default function(context) {
         // symbol instance has flows inside it; make a copy of it,
         // detach it to a group, find the hotspots, and then kill the copy
         let overrides = {...symbolInstance.overrides(), ...hotspotOverrides};
+        let isFixed = common.isLayerFixedToViewport(symbolInstance);
+        let resizingConstraint = symbolInstance.resizingConstraint();
         let dup = symbolInstance.copy();
         symbolInstance.parentGroup().addLayer(dup);
         dup = dup.detachByReplacingWithGroup();
+        if (isFixed) {
+          dup.setIsFixedToViewport(true);
+        }
+        dup.setResizingConstraint(resizingConstraint);
         findHotspotsUnderSubtree_(dup, overrides);
         dup.removeFromParent();
       }
@@ -220,7 +253,7 @@ export default function(context) {
 }
 
 
-function exportArtboard(context, destPath, artboard) {
+function exportArtboard(context, destPath, artboard, viewportSize) {
   // TODO: when sketch.export offers more control, switch to it
   // sketch.export(artboard, {
   //   formats: 'png',
@@ -256,11 +289,28 @@ function exportArtboard(context, destPath, artboard) {
   visibleFixedLayers.forEach(l => l.setIsVisible(false));
   doExport('');
   if (visibleFixedLayers.length) {
-    // show the fixed layers again, hide everything else, and export
-    visibleFixedLayers.forEach(l => l.setIsVisible(true));
+    // show the fixed layers again
+    let artboardSize = {
+      width: artboardCopy.frame().width(),
+      height: artboardCopy.frame().height()
+    };
+    visibleFixedLayers.forEach(l => {
+      l.setIsVisible(true);
+      let frame = l.frame();
+      // floating/fixed layers that are a fixed distance to the right or bottom of
+      // the screen should be positioned based on viewport size, not artboard size
+      if (l.hasFixedRight()) {
+        frame.setX(frame.x() + viewportSize.width - artboardSize.width);
+      }
+      if (l.hasFixedBottom()) {
+        frame.setY(frame.y() + viewportSize.height - artboardSize.height);
+      }
+    });
+    // hide everything else
     Array.from(artboardCopy.children())
         .filter(l => !layersNotToHideForFixedExport.has(l))
         .forEach(l => l.setIsVisible(false));
+    // export fixed layers
     artboardCopy.setIncludeBackgroundColorInExport(false);
     doExport('_fixed');
     hasFixedLayers = true;

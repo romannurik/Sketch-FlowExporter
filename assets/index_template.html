@@ -136,11 +136,11 @@
       }
 
       resize() {
-        let width = this.startArtboard.presetWidth || this.startArtboard.width;
-        let height = this.startArtboard.presetHeight || this.startArtboard.height;
-        if (this.currentArtboard.presetWidth && this.currentArtboard.presetHeight) {
-          width = this.currentArtboard.presetWidth;
-          height = this.currentArtboard.presetHeight;
+        let width = this.startArtboard.viewportWidth || this.startArtboard.width;
+        let height = this.startArtboard.viewportHeight || this.startArtboard.height;
+        if (this.currentArtboard.viewportWidth && this.currentArtboard.viewportHeight) {
+          width = this.currentArtboard.viewportWidth;
+          height = this.currentArtboard.viewportHeight;
         }
 
         let xScale = window.innerHeight / height;
