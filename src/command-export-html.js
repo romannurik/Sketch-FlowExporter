@@ -173,7 +173,7 @@ export default function(context) {
         let frame = nativeLayer.frame();
         let rectangle = new Rectangle(frame.x(), frame.y(), frame.width(), frame.height());
         let isFixed = common.isLayerFixedToViewport(nativeLayer);
-        let outermostFixedToViewportParent = null;
+        let outermostFixedToViewportParent = isFixed ? nativeLayer : null;
         let parent = nativeLayer.parentGroup();
         while (parent && !(parent instanceof MSArtboardGroup || parent instanceof MSSymbolMaster)) {
           rectangle.offset(parent.frame().x(), parent.frame().y());
