@@ -25,7 +25,6 @@ const path = require('@skpm/path');
 import * as common from './lib/common';
 import * as prefs from './prefs';
 
-
 export default function(context) {
   let document = Document.getSelectedDocument();
 
@@ -175,6 +174,7 @@ export default function(context) {
         let isFixed = common.isLayerFixedToViewport(nativeLayer);
         let outermostFixedToViewportParent = isFixed ? nativeLayer : null;
         let parent = nativeLayer.parentGroup();
+        let animationType = nativeFlow.animationType();
         while (parent && !(parent instanceof MSArtboardGroup || parent instanceof MSSymbolMaster)) {
           rectangle.offset(parent.frame().x(), parent.frame().y());
           if (common.isLayerFixedToViewport(parent)) {
@@ -206,7 +206,7 @@ export default function(context) {
             artboardsToProcess.push(target);
           }
 
-          artboardData.hotspots.push({rectangle, target, isFixed});
+          artboardData.hotspots.push({rectangle, target, isFixed, animationType});
         }
       }
 
