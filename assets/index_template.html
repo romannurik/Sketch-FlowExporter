@@ -311,6 +311,7 @@
         $('.artboard').removeClass('is-active');
         $(`.artboard[data-artboard-id="${artboardId}"]`).addClass('is-active');
 
+        $('.is-active').removeClass(animationTypes);
         if (animationType) {
           $('.is-active').addClass(animationType);
         }
