@@ -222,7 +222,11 @@ export default function(context) {
         let resizingConstraint = symbolInstance.resizingConstraint();
         let dup = symbolInstance.copy();
         symbolInstance.parentGroup().addLayer(dup);
-        dup = dup.detachByReplacingWithGroup();
+        if (dup.detachStylesAndReplaceWithGroupRecursively) {
+          dup = dup.detachStylesAndReplaceWithGroupRecursively(true);
+        } else {
+          dup = dup.detachByReplacingWithGroup();
+        }
         if (isFixed) {
           dup.setIsFixedToViewport(true);
         }
