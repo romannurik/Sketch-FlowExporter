@@ -38,7 +38,19 @@ export default function(context) {
   let artboardsById = {};
 
   let flowStartArtboards = [];
+  let selectedArtboardIds = new Set([]);
   let hasArtboards = null;
+
+  // find artboards containing selections
+  document.selectedLayers.forEach(layer => {
+    while (layer && !(layer instanceof Artboard)) {
+      layer = layer.parent;
+    }
+
+    if (layer) {
+      selectedArtboardIds.add(layer.id);
+    }
+  });
 
   // find a starting artboard
   document.pages.forEach(page => {
@@ -64,18 +76,14 @@ export default function(context) {
   }
 
   // find the best starting point
-  let flowStartArtboard = null;
-  if (flowStartArtboards.length) {
-    // there are artboards marked as starting points. find the best one
-    // TODO: better handling of multiple starting artboards
-    flowStartArtboard = flowStartArtboards[0];
-  } else {
-    // there aren't any artboards marked as starting points, pick a random artboard
-    // TODO: better handling of this (e.g. pick the top-left most one on the current page?)
-    flowStartArtboard = Object.values(artboardsById)[0];
-    // TODO: should we set the chosen one as the prototyping start point?
-    // flowStartArtboard.flowStartPoint = true;
-  }
+  // if there are artboards marked as starting points, start with those, otherwise
+  // look at all artboards
+  let possibleStartArtboards = flowStartArtboards.length
+      ? flowStartArtboards: Object.values(artboardsById);
+
+  // pick the first eligible start artboard that contains a selection, or just the first one
+  let flowStartArtboard = possibleStartArtboards.find(a => selectedArtboardIds.has(a.id))
+      || possibleStartArtboards[0];
 
   // ask user to pick a directory, with default export name pre-filled
   let defaultExportPath = 'ExportedFlow';
