@@ -13,6 +13,33 @@
       overflow-x: hidden;
     }
 
+    .loading-element {
+      display: none;
+      position: absolute;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 16px;
+      user-select: none;
+      color: #666;
+      animation: loading-element-enter .2s ease .5s;
+      animation-fill-mode: backwards;
+    }
+
+    @keyframes loading-element-enter {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    body.is-loading .loading-element {
+      display: block;
+    }
+
+    body.is-loading .prototype-container {
+      display: none;
+    }
+
     .prototype-container {
       position: absolute;
       height: 100%;
@@ -96,10 +123,11 @@
     }
   </style>
 </head>
-<body <%= showHotspots ? 'can-show-hotspots' : '' %>>
+<body class="is-loading"
+    <%= showHotspots ? 'can-show-hotspots' : '' %>>
 
-  <div class="prototype-container">
-  </div>
+  <div class="loading-element">Loading&hellip;</div>
+  <div class="prototype-container"></div>
 
   <script>
 
@@ -109,8 +137,36 @@
         this.buildUi();
       }
 
+      preloadImages() {
+        function preloadImageUrl_(url) {
+          return new Promise((resolve, reject) => {
+            let img = document.createElement('img');
+            img.src = url;
+            img.onload = () => { console.log('load'); resolve(); }
+            img.onerror = () => { console.log('error'); resolve(); }
+          });
+        }
+
+        return new Promise((resolve, reject) => {
+          let visitedArtboards = [];
+          let imageUrls = new Set([]);
+
+          let promises = [];
+          Object.keys(this.prototypeData.artboards).forEach(id => {
+            promises.push(preloadImageUrl_(`${id}.png`));
+            if (this.prototypeData.artboards[id].hasFixedLayers) {
+              promises.push(preloadImageUrl_(`${id}_fixed.png`));
+            }
+          });
+
+          Promise.all(promises).then(resolve);
+        });
+      }
+
       buildUi() {
         this.buildArtboards();
+
+        this.preloadImages().then(() => $('body').removeClass('is-loading'));
 
         if (this.prototypeData.title) {
           document.title = this.prototypeData.title;
