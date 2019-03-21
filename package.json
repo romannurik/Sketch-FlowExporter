@@ -1,7 +1,7 @@
 {
   "name": "sketch-flowexporter",
   "description": "A Sketch plugin that exports prototype flows built with Sketch 49+ to HTML.",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "engines": {
     "sketch": ">=49.0.0"
   },
