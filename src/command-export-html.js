@@ -171,53 +171,9 @@ export default function(context) {
       hasFixedLayers
     };
 
-    let findHotspotsUnderSubtree_ = (nativeParentGroup, hotspotOverrides) => {
-      let layersWithFlow = common.getAllLayersMatchingPredicate(
-          nativeParentGroup,
-          NSPredicate.predicateWithFormat('flow != nil'));
-      for (let nativeLayer of layersWithFlow) {
-        let layerId = String(nativeLayer.objectID());
-        let nativeFlow = nativeLayer.flow();
-        let frame = nativeLayer.frame();
-        let rectangle = new Rectangle(frame.x(), frame.y(), frame.width(), frame.height());
-        let isFixed = common.isLayerFixedToViewport(nativeLayer);
-        let outermostFixedToViewportParent = isFixed ? nativeLayer : null;
-        let parent = nativeLayer.parentGroup();
-        while (parent && !(parent instanceof MSArtboardGroup || parent instanceof MSSymbolMaster)) {
-          rectangle.offset(parent.frame().x(), parent.frame().y());
-          if (common.isLayerFixedToViewport(parent)) {
-            outermostFixedToViewportParent = parent;
-          }
-          parent = parent.parentGroup();
-        }
+    let dupList = [];
 
-        if (outermostFixedToViewportParent) {
-          isFixed = true;
-          // hotspots inside floating/fixed layers that are a fixed distance to the
-          // right or bottom of the screen should be positioned based on viewport size,
-          // not artboard size
-          if (outermostFixedToViewportParent.hasFixedRight()) {
-            rectangle.offset(viewportSize.width - artboardSize.width, 0);
-          }
-          if (outermostFixedToViewportParent.hasFixedBottom()) {
-            rectangle.offset(0, viewportSize.height - artboardSize.height);
-          }
-        }
-
-        let target = String(nativeFlow.destinationArtboardID());
-        if (layerId in hotspotOverrides) {
-          target = hotspotOverrides[layerId];
-        }
-
-        if (target && nativeFlow.isValidFlowConnection()) {
-          if (target !== String(Flow.BackTarget)) {
-            artboardsToProcess.push(target);
-          }
-
-          artboardData.hotspots.push({rectangle, target, isFixed});
-        }
-      }
-
+    let flattenSymbolInstances_ = nativeParentGroup => {
       let symbolInstances = common.getAllLayersMatchingPredicate(
           nativeParentGroup,
           NSPredicate.predicateWithFormat('className == %@', 'MSSymbolInstance'))
@@ -225,11 +181,10 @@ export default function(context) {
       for (let symbolInstance of symbolInstances) {
         // symbol instance has flows inside it; make a copy of it,
         // detach it to a group, find the hotspots, and then kill the copy
-        let overrides = {...symbolInstance.overrides(), ...hotspotOverrides};
         let isFixed = common.isLayerFixedToViewport(symbolInstance);
         let resizingConstraint = symbolInstance.resizingConstraint();
         let dup = symbolInstance.copy();
-        symbolInstance.parentGroup().addLayer(dup);
+        symbolInstance.parentGroup().insertLayer_afterLayer(dup, symbolInstance);
         if (dup.detachStylesAndReplaceWithGroupRecursively) {
           dup = dup.detachStylesAndReplaceWithGroupRecursively(true);
         } else {
@@ -239,12 +194,56 @@ export default function(context) {
           dup.setIsFixedToViewport(true);
         }
         dup.setResizingConstraint(resizingConstraint);
-        findHotspotsUnderSubtree_(dup, overrides);
-        dup.removeFromParent();
+        flattenSymbolInstances_(dup);
+        dupList.push(dup);
       }
     };
 
-    findHotspotsUnderSubtree_(artboard.sketchObject, {});
+    flattenSymbolInstances_(artboard.sketchObject);
+
+    let layersWithFlow = common.getAllLayersMatchingPredicate(
+        artboard.sketchObject,
+        NSPredicate.predicateWithFormat('flow != nil'));
+    for (let nativeLayer of layersWithFlow) {
+      let layerId = String(nativeLayer.objectID());
+      let nativeFlow = nativeLayer.flow();
+      let frame = nativeLayer.frame();
+      let rectangle = new Rectangle(frame.x(), frame.y(), frame.width(), frame.height());
+      let isFixed = common.isLayerFixedToViewport(nativeLayer);
+      let outermostFixedToViewportParent = isFixed ? nativeLayer : null;
+      let parent = nativeLayer.parentGroup();
+      while (parent && !(parent instanceof MSArtboardGroup || parent instanceof MSSymbolMaster)) {
+        rectangle.offset(parent.frame().x(), parent.frame().y());
+        if (common.isLayerFixedToViewport(parent)) {
+          outermostFixedToViewportParent = parent;
+        }
+        parent = parent.parentGroup();
+      }
+
+      if (outermostFixedToViewportParent) {
+        isFixed = true;
+        // hotspots inside floating/fixed layers that are a fixed distance to the
+        // right or bottom of the screen should be positioned based on viewport size,
+        // not artboard size
+        if (outermostFixedToViewportParent.hasFixedRight()) {
+          rectangle.offset(viewportSize.width - artboardSize.width, 0);
+        }
+        if (outermostFixedToViewportParent.hasFixedBottom()) {
+          rectangle.offset(0, viewportSize.height - artboardSize.height);
+        }
+      }
+
+      let target = String(nativeFlow.destinationArtboardID());
+      if (target && nativeFlow.isValidFlowConnection()) {
+        if (target !== String(Flow.BackTarget)) {
+          artboardsToProcess.push(target);
+        }
+
+        artboardData.hotspots.push({rectangle, target, isFixed});
+      }
+    }
+
+    dupList.forEach(dup => dup.removeFromParent());
 
     // store metadata
     prototypeData.artboards[artboard.id] = artboardData;
