@@ -34,7 +34,7 @@
   },
   "author": "Roman Nurik <roman@nurik.net>",
   "dependencies": {
-    "@skpm/dialog": "^0.2.1",
+    "@skpm/dialog": "^0.2.6",
     "@skpm/fs": "^0.1.2",
     "@skpm/path": "^0.1.0",
     "mocha-js-delegate": "^0.1.1",
