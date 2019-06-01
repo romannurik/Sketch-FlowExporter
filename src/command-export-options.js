@@ -55,6 +55,10 @@ export default function(context) {
       view: nib.views.showHotspotsCheckbox,
       prefKey: 'showHotspots',
     }),
+    new CheckboxFieldController(context, {
+      view: nib.views.preventBodyScrollingCheckbox,
+      prefKey: 'preventBodyScrolling',
+    }),
   ];
 
   controllers.forEach(c => c.load());

@@ -368,6 +368,7 @@ function makeIndexHtml(context, prototypeData) {
   let expanded = hydrate(template, {
     prototypeData,
     showHotspots: prefs.resolveDocumentPrefs(context, context.document).showHotspots,
+	preventBodyScrolling: prefs.resolveDocumentPrefs(context, context.document).preventBodyScrolling,
   });
   return expanded;
 }

@@ -36,6 +36,7 @@ const DEFAULTS = {
   exportScale: 1,
   // layout: 'simple',
   showHotspots: true,
+  preventBodyScrolling: false,
 };
 
 
