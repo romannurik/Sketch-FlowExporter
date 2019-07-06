@@ -23,6 +23,7 @@ const PREFS_KEY = 'export_options';
 export const EXPORT_SCALES = [
   { value: 1, label: '1x' },
   { value: 2, label: '2x' },
+  { value: 4, label: '4x' },
 ];
 
 
