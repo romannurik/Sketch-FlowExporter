@@ -2,15 +2,17 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <script src="jquery.min.js"></script>
   <style>
     html, body {
       margin: 0;
-      height: 100%;
+      height: 100vh;
       overflow-x: hidden;
+      overscroll-behavior: none;
     }
 
     .loading-element {
@@ -53,11 +55,12 @@
     }
 
     .prototype-container {
-      position: absolute;
+      position: fixed;
       height: 100%;
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
+      overscroll-behavior: auto;
     }
 
     .prototype-container ::-webkit-scrollbar {
@@ -103,6 +106,7 @@
       left: 0;
       top: 0;
       background-size: contain;
+      overflow: hidden; /* don't allow hotspots to create scrolling */
     }
 
     .hotspot {
@@ -144,6 +148,10 @@
   <div class="prototype-container"></div>
 
   <script>
+    const env = {
+      isIpad: navigator.userAgent.match(/iPad/),
+      isIphone: navigator.userAgent.match(/iPhone/),
+    };
 
     class Proto {
       constructor(prototypeData) {
@@ -224,6 +232,14 @@
       }
 
       resize() {
+        let deviceWidth = window.innerWidth;
+        let deviceHeight = window.innerHeight;
+
+        if (env.isIpad || env.isIphone) {
+          deviceWidth = screen.width;
+          deviceHeight = screen.height;
+        }
+
         let width = this.startArtboard.viewportWidth || this.startArtboard.width;
         let height = this.startArtboard.viewportHeight || this.startArtboard.height;
         if (this.currentArtboard.viewportWidth && this.currentArtboard.viewportHeight) {
@@ -231,8 +247,8 @@
           height = this.currentArtboard.viewportHeight;
         }
 
-        let xScale = window.innerHeight / height;
-        let yScale = window.innerWidth / width;
+        let xScale = deviceHeight / height;
+        let yScale = deviceWidth / width;
         $('.prototype-container')
             .css({
               width: width,
