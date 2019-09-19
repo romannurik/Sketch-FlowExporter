@@ -115,6 +115,11 @@
       opacity: 0;
     }
 
+    body[can-show-hotspots] {
+      /* this helps hotspots work on iOS */
+      cursor: pointer;
+    }
+
     body[can-show-hotspots] .hotspot {
       background-color: rgba(239, 108, 0, .2);
       box-shadow:
@@ -217,10 +222,6 @@
         });
 
         $(document).click(() => {
-          if (this.shouldSuppressHotspotReveal_) {
-            return;
-          }
-
           $(document.body).removeClass('highlight-hotspots');
           let f = document.body.offsetWidth;
           $(document.body).addClass('highlight-hotspots');
@@ -235,7 +236,7 @@
         let deviceWidth = window.innerWidth;
         let deviceHeight = window.innerHeight;
 
-        if (env.isIpad || env.isIphone) {
+        if (window.navigator.standalone && (env.isIpad || env.isIphone)) {
           deviceWidth = screen.width;
           deviceHeight = screen.height;
         }
