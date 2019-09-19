@@ -177,7 +177,7 @@ export default function(context) {
       let symbolInstances = common.getAllLayersMatchingPredicate(
           nativeParentGroup,
           NSPredicate.predicateWithFormat('className == %@', 'MSSymbolInstance'))
-          .filter(symbolInstance => doesSymbolInstanceHaveFlows(symbolInstance));
+          .filter(symbolInstance => symbolInstance.isVisible() === 1 && doesSymbolInstanceHaveFlows(symbolInstance));
       for (let symbolInstance of symbolInstances) {
         // symbol instance has flows inside it; make a copy of it,
         // detach it to a group, find the hotspots, and then kill the copy
@@ -203,7 +203,7 @@ export default function(context) {
 
     let layersWithFlow = common.getAllLayersMatchingPredicate(
         artboard.sketchObject,
-        NSPredicate.predicateWithFormat('flow != nil'));
+        NSPredicate.predicateWithFormat('(flow != nil) AND (isVisible = 1)'));
     for (let nativeLayer of layersWithFlow) {
       let layerId = String(nativeLayer.objectID());
       let nativeFlow = nativeLayer.flow();
