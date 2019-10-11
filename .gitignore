@@ -3,6 +3,9 @@ _sandbox
 # Sketch Runner no longer requires this in the repo
 *.sketchplugin
 
+# Private info
+.skpmrc
+
 # npm
 node_modules
 .npm

@@ -74,14 +74,16 @@
       right: 0;
       bottom: 0;
       opacity: 0;
-      display: none;
+      visibility: hidden;
+      pointer-events: none;
       box-shadow: 0 0 0 1px rgba(0, 0, 0, .12);
       overflow: hidden;
     }
 
     .artboard.is-active {
       opacity: 1;
-      display: block;
+      visibility: visible;
+      pointer-events: all;
     }
 
     .artboard-scroll-container,
