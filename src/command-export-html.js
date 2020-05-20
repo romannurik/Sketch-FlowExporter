@@ -266,21 +266,14 @@ export default function(context) {
 
 
 function exportArtboard(context, destPath, artboard, viewportSize) {
-  // TODO: when sketch.export offers more control, switch to it
-  // sketch.export(artboard, {
-  //   formats: 'png',
-  //   'use-id-for-name': true,
-  //   overwriting: true,
-  //   output: destPath,
-  //   scales: String(prefs.resolveDocumentPrefs(context, context.document).exportScale),
-  // });
-
   // we're going to do two exports: first, all the non-fixed layers, and then, all the
   // fixed layers. make a copy of the artboard because we're going to do a lot of
   // showing and hiding things
   let hasFixedLayers = false;
 
   let artboardCopy = artboard.sketchObject.copy();
+  artboard.sketchObject.parentGroup().insertLayer_afterLayer(
+      artboardCopy, artboard.sketchObject);
   let visibleFixedLayers = common.getAllLayersMatchingPredicate(
       artboardCopy,
       NSPredicate.predicateWithFormat('(isFixedToViewport = 1) AND (isVisible = 1)'));
@@ -328,10 +321,25 @@ function exportArtboard(context, destPath, artboard, viewportSize) {
     hasFixedLayers = true;
   }
 
+  artboardCopy.removeFromParent();
   return {hasFixedLayers};
 
   function doExport(suffix) {
-    let ancestry = MSImmutableLayerAncestry.ancestryWithMSLayer_(artboardCopy);
+    // TODO: when sketch.export offers more control, switch to it
+    // sketch.export(artboard, {
+    //   formats: 'png',
+    //   'use-id-for-name': true,
+    //   overwriting: true,
+    //   output: destPath,
+    //   scales: String(prefs.resolveDocumentPrefs(context, context.document).exportScale),
+    // });
+    let ancestry;
+    if (artboardCopy.ancestry) {
+      // sketch 66
+      ancestry = artboardCopy.ancestry();
+    } else {
+      ancestry = MSImmutableLayerAncestry.ancestryWithMSLayer_(artboardCopy);
+    }
     let exportRequest = MSExportRequest.exportRequestsFromLayerAncestry_(ancestry).firstObject();
     exportRequest.format = 'png';
     exportRequest.scale = prefs.resolveDocumentPrefs(context, context.document).exportScale;
@@ -344,6 +352,10 @@ function exportArtboard(context, destPath, artboard, viewportSize) {
 
 function doesSymbolInstanceHaveFlows(nativeSymbolInstance) {
   // TODO: cache true/false for a given master
+  if (!nativeSymbolInstance.symbolMaster()) {
+    return false;
+  }
+
   if (common.getAllLayersMatchingPredicate(
     nativeSymbolInstance.symbolMaster(),
     NSPredicate.predicateWithFormat('flow != nil')).length) {
