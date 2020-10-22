@@ -227,10 +227,18 @@ export default function(context) {
         // right or bottom of the screen should be positioned based on viewport size,
         // not artboard size
         if (outermostFixedToViewportParent.hasFixedRight()) {
-          rectangle.offset(viewportSize.width - artboardSize.width, 0);
+          if (nativeLayer.hasFixedLeft()) {
+            rectangle.width -= artboardSize.width - viewportSize.width;
+          } else {
+            rectangle.offset(viewportSize.width - artboardSize.width, 0);
+          }
         }
         if (outermostFixedToViewportParent.hasFixedBottom()) {
-          rectangle.offset(0, viewportSize.height - artboardSize.height);
+          if (nativeLayer.hasFixedTop()) {
+            rectangle.height -= artboardSize.width - viewportSize.width;
+          } else {
+            rectangle.offset(0, viewportSize.height - artboardSize.height);
+          }
         }
       }
 
@@ -305,10 +313,19 @@ function exportArtboard(context, destPath, artboard, viewportSize) {
       // floating/fixed layers that are a fixed distance to the right or bottom of
       // the screen should be positioned based on viewport size, not artboard size
       if (l.hasFixedRight()) {
-        frame.setX(frame.x() + viewportSize.width - artboardSize.width);
+        if (l.hasFixedLeft()) {
+          frame.setWidth(frame.width() - (artboardSize.width - viewportSize.width));
+        }
+        else {
+          frame.setX(frame.x() + viewportSize.width - artboardSize.width);
+        }
       }
       if (l.hasFixedBottom()) {
-        frame.setY(frame.y() + viewportSize.height - artboardSize.height);
+        if (l.hasFixedTop()) {
+          frame.setHeight(frame.height() - (artboardSize.height - viewportSize.height));
+        } else {
+          frame.setY(frame.y() + viewportSize.height - artboardSize.height);
+        }
       }
     });
     // hide everything else
