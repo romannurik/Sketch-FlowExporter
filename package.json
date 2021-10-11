@@ -25,7 +25,7 @@
   "scripts": {
     "nibs": "ibtool --compile assets/Prefs.nib src/Prefs.xib",
     "build": "npm run nibs && skpm-build",
-    "watch": "npm run nibs && skpm-build --watch",
+    "start": "npm run nibs && skpm-build --watch",
     "postinstall": "npm run build && skpm-link"
   },
   "devDependencies": {
