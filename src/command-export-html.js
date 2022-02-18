@@ -195,9 +195,11 @@ export default function(context) {
         if (isFixed) {
           dup.setIsFixedToViewport(true);
         }
-        dup.setResizingConstraint(resizingConstraint);
-        flattenSymbolInstances_(dup);
-        dupList.push(dup);
+        if (dup != null) {
+          dup.setResizingConstraint(resizingConstraint);
+          flattenSymbolInstances_(dup);
+          dupList.push(dup);
+        }
       }
     };
 
