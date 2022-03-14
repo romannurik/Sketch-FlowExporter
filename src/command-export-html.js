@@ -186,11 +186,11 @@ export default function(context) {
         let resizingConstraint = symbolInstance.resizingConstraint();
         let dup = symbolInstance.copy();
         symbolInstance.parentGroup().insertLayer_afterLayer(dup, symbolInstance);
-        if (dup.detachStylesAndReplaceWithGroupRecursively) {
-          let map = dup.detachStylesAndReplaceWithGroupRecursively();
-          dup = map.objectForKey(dup);
+        let map = dup.detachStylesAndReplaceWithGroupRecursively();
+        if (map.isKindOfClass(NSMapTable)) {
+          dup = map.objectForKey(dup.immutableModelObject());
         } else {
-          dup = dup.detachByReplacingWithGroup();
+          dup = dup.detachStylesAndReplaceWithGroup();
         }
         if (isFixed) {
           dup.setIsFixedToViewport(true);
