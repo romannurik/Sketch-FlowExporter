@@ -150,12 +150,22 @@ export default function(context) {
       height: artboard.frame.height,
     };
     let viewportSize = artboardSize;
-    let preset = artboard.sketchObject.preset();
-    if (preset) {
-      viewportSize = {
-        width: preset.width(),
-        height: preset.height()
-      };
+    if (artboard.sketchObject.prototypeViewport) { // recent versions of sketch
+      let prototypeViewport = artboard.sketchObject.prototypeViewport();
+      if (prototypeViewport) {
+        viewportSize = {
+          width: Number(prototypeViewport.size().width),
+          height: Number(prototypeViewport.size().height)
+        };
+      }
+    } else if (artboard.sketchObject.preset) { // earlier versions of sketch
+      let preset = artboard.sketchObject.preset();
+      if (preset) {
+        viewportSize = {
+          width: preset.width(),
+          height: preset.height()
+        };
+      }
     }
 
     // export the artboard image to PNG
